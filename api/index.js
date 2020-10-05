@@ -9,17 +9,19 @@ const {mongoose}  = require('./db/mongoose');
 // Load in the mongoose models
 const { List } = require('./db/models/list.model');
 const { Task } = require('./db/models/task.model');
+const { User } = require('./db/models/user.model');
 
 // Load middleware
 app.use(bodyParser.json());
 app.use(cors());
 
-//CORS HEADERS MIDDLEWARE
-// app.use(function (req, res, next) {
-//     res.header("Access-Control-Allow-Origin", "YOUR-DOMAIN.TLD"); // update to match the domain you will make the request from
-//     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//     next();
-//   });
+// CORS HEADERS MIDDLEWARE
+app.use(function (req, res, next) {
+    res.header("Access-Control-Allow-Origin", "http://localhost:4200"); // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Headers", "GET, POST, HEAD, OPTIONS, PUT, PATCH, DELETE");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
 
 // Route Handlers
 
@@ -75,7 +77,8 @@ app.patch('/lists/:id', (req, res)=> {
     List.findOneAndUpdate({ _id: req.params.id }, {
         $set: req.body
     }).then(() => {
-        res.sendStatus(200);
+        // res.sendStatus(200);
+        res.send({message: 'Upadated Successfully'});
     });
 });
 
@@ -118,7 +121,8 @@ app.patch('/lists/:listId/tasks/:taskId', (req, res) => {
     }, {
         $set: req.body
     }).then(() => {
-        res.sendStatus(200);
+        // res.sendStatus(200);
+        res.send({message: 'Updated Successfully'});
     })
 });
 
@@ -130,6 +134,62 @@ app.delete('/lists/:listId/tasks/:taskId', (req, res) => {
         res.send(removedListDoc);
     })
 })
+
+/**USER ROUTES */
+/**
+ * POST /users
+ * Purpose: Sign up
+ */
+app.post('/users', (req, res) => {
+    let body = req.body;
+    let newUser = new User(body);
+
+    newUser.save().then(() => {
+        return newUser.createSession();
+    }).then((refreshToken) => {
+        // Session created successfully - refreshToken returned
+        // now we generate an access auth token for the user
+
+        return newUser.generateAccessAuthToken().then((accessToken) => {
+            // access auth token generated successffully, now we return an object containing the auth tokens
+            return { accessToken, refreshToken}
+        });
+    }). then((authTokens) => {
+        // Now we construct and send the response to the user with their auth tokens in the header and the user object in the body
+        res
+            .header('x-refresh-token', authTokens.refreshToken)
+            .header('x-access-token', authTokens.accessToken)
+            .send(newUser);
+    }).catch((e) => {
+        res.status(400).send(e);
+    })
+})
+
+app.post('/users/login', (req, res) => {
+    let email = req.body.email;
+    let password = req.body.password;
+
+    User.findByCredentials(email, password).then((user) => {
+        return user.createSession().then((refreshToken) => {
+            // Session created successfully - refreshToken returned
+            // now we generate an access auth token for the user
+
+            return user.generateAccessAuthToken().then((accessToken) => {
+                // access auth token generated successfully, now we return an object containing the auth tokens
+                return { accessToken, refreshToken}
+            });
+        }).then((authTokens) => {
+            // Now we construct and send the response to the user with their auth tokens in the header and the user object in the body
+            res
+                    .header('x-refresh-token', authTokens.refreshToken)
+                    .header('x-access-token', authTokens.accessToken)
+                    .send(user);
+        })
+    }).catch((e) => {
+        res.status(400).send(e);
+    });
+})
+
 app.listen(3000, () => {
     console.log("Server is listening on port 3000");
 })

@@ -29,6 +29,7 @@
   padding: 42px;
   border-top-right-radius: 8px;
   border-bottom-right-radius: 8px;
+  position: relative;
 }
 
 .title {
@@ -84,8 +85,32 @@
   }
 
 
-  &.complete {
+  &.completed {
     text-decoration: line-through;
     opacity: 80%;
   }
 }
+
+.circle-add-button {
+  position: absolute;
+  height: 50px;
+  width: 50px;
+  // background: $primary;
+  bottom: 35px;
+  right: 35px;
+  // border: none;
+  border-radius: 50%;
+  text-align: center;
+  justify-content: center;
+  align-self: center;
+
+  .text-icon {
+    color: white;
+    font-size: 40px;
+    font-weight: bolder;
+
+
+  }
+}
+
+
